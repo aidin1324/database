@@ -24,3 +24,7 @@ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d lab03 -f lab-03/psql-demo.sql
 Lab 3 uses 12 fictional students and drops only a temporary example table.
 
 Each practical lab has a saved command log. Terminal images display excerpts from those logs on a dark background. The pgAdmin image shows the application itself.
+
+## Document
+
+- [Employment certificate](documents/Справка%20с%20работы.pdf)
