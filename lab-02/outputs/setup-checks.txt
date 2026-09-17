@@ -1,0 +1,23 @@
+$ psql --version
+psql (PostgreSQL) 18.6 (Homebrew)
+$ brew list --cask --versions pgadmin4
+pgadmin4 9.17
+$ brew services list
+Name          Status User  File
+postgresql@18 started         aidin ~/Library/LaunchAgents/homebrew.mxcl.postgresql@18.plist
+redis         none                  
+unbound       none                  
+$ pg_isready -h 127.0.0.1 -p 5432
+127.0.0.1:5432 - accepting connections
+$ psql -X -h 127.0.0.1 -p 5432 -U aidin -d postgres -c 'SELECT current_database(), current_user;'
+ current_database | current_user 
+------------------+--------------
+ postgres         | aidin
+(1 row)
+
+$ psql -X -h 127.0.0.1 -p 5432 -U aidin -d postgres -c 'SELECT rolname, rolpassword IS NOT NULL AS password_set FROM pg_authid WHERE rolname = '"'"'aidin'"'"';'
+ rolname | password_set 
+---------+--------------
+ aidin   | t
+(1 row)
+

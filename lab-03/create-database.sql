@@ -1,0 +1,4 @@
+\set ON_ERROR_STOP on
+SELECT 'CREATE DATABASE lab03'
+WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'lab03')
+\gexec
