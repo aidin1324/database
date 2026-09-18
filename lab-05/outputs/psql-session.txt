@@ -1,0 +1,34 @@
+$ psql -X -a -v ON_ERROR_STOP=1 -P pager=off -h 127.0.0.1 -p 5432 -U aidin -d postgres -f lab-05/lab05.sql
+\set ON_ERROR_STOP on
+-- Laboratory Work 5: Databases
+-- Run this file while connected to the postgres database.
+-- Create lab05 only when it does not exist.
+SELECT 'CREATE DATABASE lab05'
+WHERE NOT EXISTS (
+    SELECT 1 FROM pg_database WHERE datname = 'lab05'
+)
+\gexec
+-- Each connection has a different backend PID. Stop if this name already exists.
+SELECT 'lab05_delete_demo_' || pg_backend_pid() AS demo_db
+\gset
+CREATE DATABASE :"demo_db";
+CREATE DATABASE
+DROP DATABASE :"demo_db";
+DROP DATABASE
+-- Show the database and switch to it.
+\l lab05
+                                                List of databases
+ Name  | Owner | Encoding | Locale Provider |   Collate   |    Ctype    | Locale | ICU Rules | Access privileges 
+-------+-------+----------+-----------------+-------------+-------------+--------+-----------+-------------------
+ lab05 | aidin | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | 
+(1 row)
+
+\connect lab05
+You are now connected to database "lab05" as user "aidin".
+SELECT current_database() AS current_database,
+       current_user AS current_user;
+ current_database | current_user 
+------------------+--------------
+ lab05            | aidin
+(1 row)
+
