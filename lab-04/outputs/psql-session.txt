@@ -1,0 +1,132 @@
+$ psql -X -a -v ON_ERROR_STOP=1 -P pager=off -h 127.0.0.1 -p 5432 -U aidin -d lab03 -f lab-04/lab04.sql
+-- Laboratory Work 4: First SQL Query
+-- Database: lab03
+-- All columns and rows.
+SELECT *
+FROM students
+ORDER BY student_id;
+ student_id |      full_name      |              email              | age | faculty |    city    | enrollment_year 
+------------+---------------------+---------------------------------+-----+---------+------------+-----------------
+          1 | Nurai Sadykova      | nurai.sadykova@example.edu      |  19 | COMSEH  | Bishkek    |            2025
+          2 | Alikhan Omarov      | alikhan.omarov@example.edu      |  21 | SBE     | Osh        |            2023
+          3 | Aelita Toktomusheva | aelita.toktomusheva@example.edu |  20 | LAS     | Karakol    |            2024
+          4 | Bekzat Usubaliev    | bekzat.usubaliev@example.edu    |  22 | COMSEH  | Naryn      |            2022
+          5 | Diana Karimova      | diana.karimova@example.edu      |  18 | MED     | Bishkek    |            2025
+          6 | Eldar Akhmedov      | eldar.akhmedov@example.edu      |  23 | SBE     | Talas      |            2022
+          7 | Farida Ismailova    | farida.ismailova@example.edu    |  20 | COMSEH  | Osh        |            2024
+          8 | Ruslan Niyazov      | ruslan.niyazov@example.edu      |  21 | LAS     | Jalal-Abad |            2023
+          9 | Kamila Turdubekova  | kamila.turdubekova@example.edu  |  19 | MED     | Karakol    |            2025
+         10 | Maksat Asanov       | maksat.asanov@example.edu       |  24 | COMSEH  | Bishkek    |            2021
+         11 | Sabina Kadyrova     | sabina.kadyrova@example.edu     |  22 | SBE     | Naryn      |            2023
+         12 | Temirlan Ergeshov   | temirlan.ergeshov@example.edu   |  20 | COMSEH  | Talas      |            2024
+(12 rows)
+
+-- Selected columns.
+SELECT full_name, email
+FROM students
+ORDER BY full_name ASC;
+      full_name      |              email              
+---------------------+---------------------------------
+ Aelita Toktomusheva | aelita.toktomusheva@example.edu
+ Alikhan Omarov      | alikhan.omarov@example.edu
+ Bekzat Usubaliev    | bekzat.usubaliev@example.edu
+ Diana Karimova      | diana.karimova@example.edu
+ Eldar Akhmedov      | eldar.akhmedov@example.edu
+ Farida Ismailova    | farida.ismailova@example.edu
+ Kamila Turdubekova  | kamila.turdubekova@example.edu
+ Maksat Asanov       | maksat.asanov@example.edu
+ Nurai Sadykova      | nurai.sadykova@example.edu
+ Ruslan Niyazov      | ruslan.niyazov@example.edu
+ Sabina Kadyrova     | sabina.kadyrova@example.edu
+ Temirlan Ergeshov   | temirlan.ergeshov@example.edu
+(12 rows)
+
+-- Read two fields from each record.
+SELECT student_id, faculty
+FROM students
+ORDER BY student_id;
+ student_id | faculty 
+------------+---------
+          1 | COMSEH
+          2 | SBE
+          3 | LAS
+          4 | COMSEH
+          5 | MED
+          6 | SBE
+          7 | COMSEH
+          8 | LAS
+          9 | MED
+         10 | COMSEH
+         11 | SBE
+         12 | COMSEH
+(12 rows)
+
+-- Match one name.
+SELECT full_name, email
+FROM students
+WHERE full_name = 'Nurai Sadykova';
+   full_name    |           email            
+----------------+----------------------------
+ Nurai Sadykova | nurai.sadykova@example.edu
+(1 row)
+
+-- Filter rows with WHERE.
+SELECT full_name, faculty, city
+FROM students
+WHERE faculty = 'COMSEH';
+     full_name     | faculty |  city   
+-------------------+---------+---------
+ Nurai Sadykova    | COMSEH  | Bishkek
+ Bekzat Usubaliev  | COMSEH  | Naryn
+ Farida Ismailova  | COMSEH  | Osh
+ Maksat Asanov     | COMSEH  | Bishkek
+ Temirlan Ergeshov | COMSEH  | Talas
+(5 rows)
+
+-- Reverse alphabetical order.
+SELECT full_name, email
+FROM students
+ORDER BY full_name DESC;
+      full_name      |              email              
+---------------------+---------------------------------
+ Temirlan Ergeshov   | temirlan.ergeshov@example.edu
+ Sabina Kadyrova     | sabina.kadyrova@example.edu
+ Ruslan Niyazov      | ruslan.niyazov@example.edu
+ Nurai Sadykova      | nurai.sadykova@example.edu
+ Maksat Asanov       | maksat.asanov@example.edu
+ Kamila Turdubekova  | kamila.turdubekova@example.edu
+ Farida Ismailova    | farida.ismailova@example.edu
+ Eldar Akhmedov      | eldar.akhmedov@example.edu
+ Diana Karimova      | diana.karimova@example.edu
+ Bekzat Usubaliev    | bekzat.usubaliev@example.edu
+ Alikhan Omarov      | alikhan.omarov@example.edu
+ Aelita Toktomusheva | aelita.toktomusheva@example.edu
+(12 rows)
+
+-- Limit the output to two records.
+SELECT full_name, email
+FROM students
+ORDER BY student_id
+LIMIT 2;
+   full_name    |           email            
+----------------+----------------------------
+ Nurai Sadykova | nurai.sadykova@example.edu
+ Alikhan Omarov | alikhan.omarov@example.edu
+(2 rows)
+
+-- Sort rows and limit the result.
+SELECT full_name, age, faculty
+FROM students
+ORDER BY age, full_name
+LIMIT 5;
+      full_name      | age | faculty 
+---------------------+-----+---------
+ Diana Karimova      |  18 | MED
+ Kamila Turdubekova  |  19 | MED
+ Nurai Sadykova      |  19 | COMSEH
+ Aelita Toktomusheva |  20 | LAS
+ Farida Ismailova    |  20 | COMSEH
+(5 rows)
+
+/* SQL comments are ignored by PostgreSQL.
+   They can explain the purpose of a query. */
