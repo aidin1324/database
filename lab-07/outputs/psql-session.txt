@@ -1,10 +1,20 @@
+$ psql -X -a -v ON_ERROR_STOP=1 -P pager=off -U aidin -d postgres -f lab-07/psql-demo.sql
 \set ON_ERROR_STOP on
 \pset pager off
 Pager usage is off.
 \ir lab07.sql
 -- Each rerun replaces only this lab's schema.
 DROP SCHEMA IF EXISTS lab07 CASCADE;
-psql:lab-07/lab07.sql:2: NOTICE:  schema "lab07" does not exist, skipping
+psql:lab-07/lab07.sql:2: NOTICE:  drop cascades to 9 other objects
+DETAIL:  drop cascades to table lab07.inline_key
+drop cascades to table lab07.table_key
+drop cascades to table lab07.named_key
+drop cascades to table lab07.added_key
+drop cascades to table lab07.course_enrollments
+drop cascades to table lab07.products
+drop cascades to table lab07.transactions
+drop cascades to table lab07.orders
+drop cascades to table lab07.customers
 DROP SCHEMA
 CREATE SCHEMA lab07;
 CREATE SCHEMA
@@ -91,26 +101,36 @@ DO $$
 BEGIN
     BEGIN
         INSERT INTO lab07.inline_key VALUES (1, 'Duplicate');
+        RAISE EXCEPTION 'Duplicate primary key was accepted';
     EXCEPTION WHEN unique_violation THEN
         RAISE NOTICE 'PRIMARY KEY rejected a duplicate value';
     END;
     BEGIN
         INSERT INTO lab07.inline_key VALUES (NULL, 'Missing ID');
+        RAISE EXCEPTION 'NULL primary key was accepted';
     EXCEPTION WHEN not_null_violation THEN
         RAISE NOTICE 'PRIMARY KEY rejected NULL';
     END;
     BEGIN
         INSERT INTO lab07.course_enrollments VALUES (1, 101, '2026-Spring', 'B');
+        RAISE EXCEPTION 'Duplicate enrollment was accepted';
     EXCEPTION WHEN unique_violation THEN
         RAISE NOTICE 'Composite key rejected a duplicate enrollment';
     END;
+    BEGIN
+        INSERT INTO lab07.orders (order_id, customer_name) VALUES (1000, 'Explicit ID');
+        RAISE EXCEPTION 'GENERATED ALWAYS accepted an explicit ID';
+    EXCEPTION WHEN generated_always THEN
+        RAISE NOTICE 'GENERATED ALWAYS rejected an explicit ID';
+    END;
 END $$;
-psql:lab-07/lab07.sql:85: NOTICE:  PRIMARY KEY rejected a duplicate value
-psql:lab-07/lab07.sql:85: NOTICE:  PRIMARY KEY rejected NULL
-psql:lab-07/lab07.sql:85: NOTICE:  Composite key rejected a duplicate enrollment
+psql:lab-07/lab07.sql:94: NOTICE:  PRIMARY KEY rejected a duplicate value
+psql:lab-07/lab07.sql:94: NOTICE:  PRIMARY KEY rejected NULL
+psql:lab-07/lab07.sql:94: NOTICE:  Composite key rejected a duplicate enrollment
+psql:lab-07/lab07.sql:94: NOTICE:  GENERATED ALWAYS rejected an explicit ID
 DO
 SELECT * FROM lab07.course_enrollments ORDER BY student_id, course_id, semester;
- student_id | course_id |  semester   | grade
+ student_id | course_id |  semester   | grade 
 ------------+-----------+-------------+-------
           1 |       101 | 2026-Fall   | A+
           1 |       101 | 2026-Spring | A
@@ -119,25 +139,25 @@ SELECT * FROM lab07.course_enrollments ORDER BY student_id, course_id, semester;
 (4 rows)
 
 SELECT product_id, product_name FROM lab07.products;
- product_id | product_name
+ product_id | product_name 
 ------------+--------------
           1 | Notebook
 (1 row)
 
 SELECT transaction_id, amount FROM lab07.transactions;
- transaction_id | amount
+ transaction_id | amount 
 ----------------+--------
               1 | 250.00
 (1 row)
 
 SELECT order_id, customer_name FROM lab07.orders;
- order_id | customer_name
+ order_id | customer_name 
 ----------+---------------
         1 | Nurai
 (1 row)
 
 SELECT customer_id, customer_name FROM lab07.customers ORDER BY customer_id;
- customer_id |  customer_name
+ customer_id |  customer_name   
 -------------+------------------
            1 | Regular Customer
         1000 | VIP Customer
@@ -146,7 +166,7 @@ SELECT customer_id, customer_name FROM lab07.customers ORDER BY customer_id;
 SELECT tablename, indexname, indexdef
 FROM pg_indexes WHERE schemaname = 'lab07' AND tablename IN ('inline_key', 'course_enrollments')
 ORDER BY tablename, indexname;
-     tablename      |        indexname        |                                                       indexdef
+     tablename      |        indexname        |                                                       indexdef                                                        
 --------------------+-------------------------+-----------------------------------------------------------------------------------------------------------------------
  course_enrollments | course_enrollments_pkey | CREATE UNIQUE INDEX course_enrollments_pkey ON lab07.course_enrollments USING btree (student_id, course_id, semester)
  inline_key         | inline_key_pkey         | CREATE UNIQUE INDEX inline_key_pkey ON lab07.inline_key USING btree (student_id)
@@ -154,38 +174,39 @@ ORDER BY tablename, indexname;
 
 \d lab07.inline_key
                        Table "lab07.inline_key"
-   Column   |          Type          | Collation | Nullable | Default
+   Column   |          Type          | Collation | Nullable | Default 
 ------------+------------------------+-----------+----------+---------
- student_id | integer                |           | not null |
- name       | character varying(100) |           | not null |
+ student_id | integer                |           | not null | 
+ name       | character varying(100) |           | not null | 
 Indexes:
     "inline_key_pkey" PRIMARY KEY, btree (student_id)
 
 \d lab07.course_enrollments
                   Table "lab07.course_enrollments"
-   Column   |         Type          | Collation | Nullable | Default
+   Column   |         Type          | Collation | Nullable | Default 
 ------------+-----------------------+-----------+----------+---------
- student_id | integer               |           | not null |
- course_id  | integer               |           | not null |
- semester   | character varying(20) |           | not null |
- grade      | character varying(2)  |           |          |
+ student_id | integer               |           | not null | 
+ course_id  | integer               |           | not null | 
+ semester   | character varying(20) |           | not null | 
+ grade      | character varying(2)  |           |          | 
 Indexes:
     "course_enrollments_pkey" PRIMARY KEY, btree (student_id, course_id, semester)
 
 \d lab07.orders
                                      Table "lab07.orders"
-    Column     |          Type          | Collation | Nullable |           Default
+    Column     |          Type          | Collation | Nullable |           Default            
 ---------------+------------------------+-----------+----------+------------------------------
  order_id      | integer                |           | not null | generated always as identity
- customer_name | character varying(100) |           | not null |
+ customer_name | character varying(100) |           | not null | 
 Indexes:
     "orders_pkey" PRIMARY KEY, btree (order_id)
 
 \d lab07.customers
                                      Table "lab07.customers"
-    Column     |          Type          | Collation | Nullable |             Default
+    Column     |          Type          | Collation | Nullable |             Default              
 ---------------+------------------------+-----------+----------+----------------------------------
  customer_id   | integer                |           | not null | generated by default as identity
- customer_name | character varying(100) |           | not null |
+ customer_name | character varying(100) |           | not null | 
 Indexes:
     "customers_pkey" PRIMARY KEY, btree (customer_id)
+

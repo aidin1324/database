@@ -26,6 +26,8 @@ UPDATE lab06.students SET date_of_birth = DATE '2006-04-12' WHERE email = 'nurai
 UPDATE lab06.students SET date_of_birth = DATE '2004-11-03' WHERE email = 'alikhan@example.edu';
 ALTER TABLE lab06.students DROP COLUMN notes;
 ALTER TABLE lab06.students ALTER COLUMN first_name TYPE TEXT;
+ALTER TABLE lab06.students DROP CONSTRAINT students_email_key;
+ALTER TABLE lab06.students ADD CONSTRAINT unique_student_email UNIQUE (email);
 ALTER TABLE lab06.students ADD CONSTRAINT grade_range CHECK (grade BETWEEN 0 AND 100);
 ALTER TABLE lab06.students RENAME COLUMN email TO email_address;
 ALTER TABLE lab06.students RENAME TO university_students;
@@ -36,18 +38,21 @@ BEGIN
     BEGIN
         INSERT INTO lab06.university_students (first_name, last_name, email_address)
         VALUES ('Duplicate', 'Email', 'nurai@example.edu');
+        RAISE EXCEPTION 'Duplicate email was accepted';
     EXCEPTION WHEN unique_violation THEN
         RAISE NOTICE 'UNIQUE rejected a duplicate email';
     END;
     BEGIN
         INSERT INTO lab06.university_students (first_name, last_name, email_address, grade)
         VALUES ('Bad', 'Grade', 'bad@example.edu', 120);
+        RAISE EXCEPTION 'Invalid grade was accepted';
     EXCEPTION WHEN check_violation THEN
         RAISE NOTICE 'CHECK rejected a grade above 100';
     END;
     BEGIN
         INSERT INTO lab06.university_students (first_name, last_name, email_address)
         VALUES (NULL, 'Name', 'null@example.edu');
+        RAISE EXCEPTION 'NULL first name was accepted';
     EXCEPTION WHEN not_null_violation THEN
         RAISE NOTICE 'NOT NULL rejected an empty first name';
     END;
@@ -60,8 +65,18 @@ FROM lab06.university_students ORDER BY student_id;
 DROP TABLE IF EXISTS lab06.test_table;
 CREATE TABLE lab06.test_table (id INTEGER PRIMARY KEY);
 DROP TABLE lab06.test_table;
+DO $$
+BEGIN
+    BEGIN
+        DROP TABLE lab06.test_table;
+        RAISE EXCEPTION 'Missing table was not detected';
+    EXCEPTION WHEN undefined_table THEN
+        RAISE NOTICE 'DROP TABLE rejected a missing table';
+    END;
+END $$;
+DROP TABLE IF EXISTS lab06.test_table;
 
 CREATE TEMP TABLE lab06_temp (id INTEGER, label TEXT);
 INSERT INTO lab06_temp VALUES (1, 'Visible only in this session');
 SELECT * FROM lab06_temp;
-DROP TABLE pg_temp.lab06_temp;
+-- PostgreSQL removes this temporary table when the session ends.

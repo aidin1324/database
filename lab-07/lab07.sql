@@ -69,18 +69,27 @@ DO $$
 BEGIN
     BEGIN
         INSERT INTO lab07.inline_key VALUES (1, 'Duplicate');
+        RAISE EXCEPTION 'Duplicate primary key was accepted';
     EXCEPTION WHEN unique_violation THEN
         RAISE NOTICE 'PRIMARY KEY rejected a duplicate value';
     END;
     BEGIN
         INSERT INTO lab07.inline_key VALUES (NULL, 'Missing ID');
+        RAISE EXCEPTION 'NULL primary key was accepted';
     EXCEPTION WHEN not_null_violation THEN
         RAISE NOTICE 'PRIMARY KEY rejected NULL';
     END;
     BEGIN
         INSERT INTO lab07.course_enrollments VALUES (1, 101, '2026-Spring', 'B');
+        RAISE EXCEPTION 'Duplicate enrollment was accepted';
     EXCEPTION WHEN unique_violation THEN
         RAISE NOTICE 'Composite key rejected a duplicate enrollment';
+    END;
+    BEGIN
+        INSERT INTO lab07.orders (order_id, customer_name) VALUES (1000, 'Explicit ID');
+        RAISE EXCEPTION 'GENERATED ALWAYS accepted an explicit ID';
+    EXCEPTION WHEN generated_always THEN
+        RAISE NOTICE 'GENERATED ALWAYS rejected an explicit ID';
     END;
 END $$;
 

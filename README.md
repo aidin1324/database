@@ -1,6 +1,6 @@
 # Database labs
 
-Database labs 1 to 5, using the [course documents](https://drive.google.com/drive/folders/1xWdXTM-DHS33Xp8yfGxYs5w5pu1XZqEf).
+Database labs 1 to 8, using the [course documents](https://drive.google.com/drive/folders/1xWdXTM-DHS33Xp8yfGxYs5w5pu1XZqEf).
 
 ## Environment
 
@@ -13,6 +13,9 @@ macOS 15 on Apple Silicon, PostgreSQL 18.6 from Homebrew and pgAdmin 4 version 9
 - [Lab 3: Basic psql commands](lab-03/README.md)
 - [Lab 4: First SQL query](lab-04/README.md)
 - [Lab 5: Databases](lab-05/README.md)
+- [Lab 6: Tables and constraints](lab-06/README.md)
+- [Lab 7: Primary keys](lab-07/README.md)
+- [Lab 8: Foreign keys and relationships](lab-08/README.md)
 
 ## Run the SQL
 
@@ -23,11 +26,14 @@ psql -X -U aidin -d postgres -f lab-03/create-database.sql
 psql -X -a -v ON_ERROR_STOP=1 -U aidin -d lab03 -f lab-03/psql-demo.sql
 psql -X -a -v ON_ERROR_STOP=1 -U aidin -d lab03 -f lab-04/lab04.sql
 psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-05/lab05.sql
+psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-06/psql-demo.sql
+psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-07/psql-demo.sql
+psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-08/psql-demo.sql
 ```
 
-Labs 3 and 4 use the same 12 fictional students. Lab 3 drops only a temporary example table. Lab 5 creates and removes a separate demo database.
+Labs 3 and 4 use the same 12 fictional students. Lab 3 drops only a temporary example table. Lab 5 creates and removes a separate demo database. Labs 6, 7 and 8 each use their own schema in the `postgres` database.
 
-Each practical lab has a saved command log. Terminal images display excerpts from those logs on a dark background. The pgAdmin image shows the application itself.
+Each practical lab has a saved command log. The dark images are browser captures of saved log excerpts. The pgAdmin image shows the application itself.
 
 ## Document
 
