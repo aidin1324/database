@@ -17,11 +17,11 @@ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-08/psql-demo.sql
 
 PostgreSQL's default action is `NO ACTION`; this lab explicitly uses `RESTRICT`. `SET DEFAULT` still requires a valid parent.
 
+The images below show saved psql output.
+
 ![Foreign key actions](screenshots/01-psql-results.png)
 
 Both 1:1 designs work: a shared primary key and a separate `UNIQUE NOT NULL` foreign key. Each rejects a second profile. A user may still have no profile. For 1:N, one instructor has two courses and one post has two comments.
-
-![One-to-one and one-to-many results](screenshots/02-relationships.png)
 
 The N:M enrollment table has two foreign keys and a composite primary key. Three enrollments remain after rejecting a duplicate. The queries list all enrollments, both students in `DB201` and both courses taken by Nurai.
 

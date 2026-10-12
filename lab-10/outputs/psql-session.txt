@@ -1,0 +1,163 @@
+$ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-10/psql-demo.sql
+\set ON_ERROR_STOP on
+\pset pager off
+Pager usage is off.
+\dt lab09.*
+              List of tables
+ Schema |       Name       | Type  | Owner 
+--------+------------------+-------+-------
+ lab09  | authors          | table | aidin
+ lab09  | book_authors     | table | aidin
+ lab09  | books            | table | aidin
+ lab09  | loans            | table | aidin
+ lab09  | member_phones    | table | aidin
+ lab09  | members          | table | aidin
+ lab09  | membership_tiers | table | aidin
+(7 rows)
+
+\d lab09.books
+                                       Table "lab09.books"
+      Column      |          Type          | Collation | Nullable |           Default            
+------------------+------------------------+-----------+----------+------------------------------
+ book_id          | integer                |           | not null | generated always as identity
+ title            | character varying(200) |           | not null | 
+ isbn             | character varying(13)  |           | not null | 
+ publication_year | integer                |           |          | 
+ available_copies | integer                |           | not null | 1
+Indexes:
+    "books_pkey" PRIMARY KEY, btree (book_id)
+    "books_isbn_key" UNIQUE CONSTRAINT, btree (isbn)
+Check constraints:
+    "books_available_copies_check" CHECK (available_copies >= 0)
+    "books_publication_year_check" CHECK (publication_year >= 1450 AND publication_year <= 2100)
+Referenced by:
+    TABLE "lab09.book_authors" CONSTRAINT "book_authors_book_id_fkey" FOREIGN KEY (book_id) REFERENCES lab09.books(book_id)
+    TABLE "lab09.loans" CONSTRAINT "loans_book_id_fkey" FOREIGN KEY (book_id) REFERENCES lab09.books(book_id)
+
+\d lab09.book_authors
+              Table "lab09.book_authors"
+  Column   |  Type   | Collation | Nullable | Default 
+-----------+---------+-----------+----------+---------
+ book_id   | integer |           | not null | 
+ author_id | integer |           | not null | 
+Indexes:
+    "book_authors_pkey" PRIMARY KEY, btree (book_id, author_id)
+Foreign-key constraints:
+    "book_authors_author_id_fkey" FOREIGN KEY (author_id) REFERENCES lab09.authors(author_id)
+    "book_authors_book_id_fkey" FOREIGN KEY (book_id) REFERENCES lab09.books(book_id)
+
+\d lab09.members
+                                     Table "lab09.members"
+     Column      |          Type          | Collation | Nullable |           Default            
+-----------------+------------------------+-----------+----------+------------------------------
+ member_id       | integer                |           | not null | generated always as identity
+ first_name      | character varying(50)  |           | not null | 
+ last_name       | character varying(50)  |           | not null | 
+ email           | character varying(100) |           | not null | 
+ tier_id         | integer                |           | not null | 
+ membership_date | date                   |           | not null | CURRENT_DATE
+Indexes:
+    "members_pkey" PRIMARY KEY, btree (member_id)
+    "members_email_key" UNIQUE CONSTRAINT, btree (email)
+Foreign-key constraints:
+    "members_tier_id_fkey" FOREIGN KEY (tier_id) REFERENCES lab09.membership_tiers(tier_id)
+Referenced by:
+    TABLE "lab09.loans" CONSTRAINT "loans_member_id_fkey" FOREIGN KEY (member_id) REFERENCES lab09.members(member_id)
+    TABLE "lab09.member_phones" CONSTRAINT "member_phones_member_id_fkey" FOREIGN KEY (member_id) REFERENCES lab09.members(member_id) ON DELETE CASCADE
+
+\d lab09.loans
+                                Table "lab09.loans"
+   Column    |     Type      | Collation | Nullable |           Default            
+-------------+---------------+-----------+----------+------------------------------
+ loan_id     | integer       |           | not null | generated always as identity
+ member_id   | integer       |           | not null | 
+ book_id     | integer       |           | not null | 
+ loan_date   | date          |           | not null | 
+ due_date    | date          |           | not null | 
+ return_date | date          |           |          | 
+ late_fee    | numeric(10,2) |           | not null | 0
+Indexes:
+    "loans_pkey" PRIMARY KEY, btree (loan_id)
+Check constraints:
+    "loans_late_fee_check" CHECK (late_fee >= 0::numeric)
+    "valid_loan_dates" CHECK (due_date >= loan_date AND (return_date IS NULL OR return_date >= loan_date))
+Foreign-key constraints:
+    "loans_book_id_fkey" FOREIGN KEY (book_id) REFERENCES lab09.books(book_id)
+    "loans_member_id_fkey" FOREIGN KEY (member_id) REFERENCES lab09.members(member_id)
+
+\ir lab10.sql
+-- Inspect the library schema created in Lab 9.
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'lab09' AND table_type = 'BASE TABLE'
+ORDER BY table_name;
+    table_name    
+------------------
+ authors
+ book_authors
+ books
+ loans
+ member_phones
+ members
+ membership_tiers
+(7 rows)
+
+SELECT table_name, ordinal_position, column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'lab09' AND table_name IN ('books', 'book_authors', 'members', 'loans')
+ORDER BY table_name, ordinal_position;
+  table_name  | ordinal_position |   column_name    |     data_type     | is_nullable 
+--------------+------------------+------------------+-------------------+-------------
+ book_authors |                1 | book_id          | integer           | NO
+ book_authors |                2 | author_id        | integer           | NO
+ books        |                1 | book_id          | integer           | NO
+ books        |                2 | title            | character varying | NO
+ books        |                3 | isbn             | character varying | NO
+ books        |                4 | publication_year | integer           | YES
+ books        |                5 | available_copies | integer           | NO
+ loans        |                1 | loan_id          | integer           | NO
+ loans        |                2 | member_id        | integer           | NO
+ loans        |                3 | book_id          | integer           | NO
+ loans        |                4 | loan_date        | date              | NO
+ loans        |                5 | due_date         | date              | NO
+ loans        |                6 | return_date      | date              | YES
+ loans        |                7 | late_fee         | numeric           | NO
+ members      |                1 | member_id        | integer           | NO
+ members      |                2 | first_name       | character varying | NO
+ members      |                3 | last_name        | character varying | NO
+ members      |                4 | email            | character varying | NO
+ members      |                5 | tier_id          | integer           | NO
+ members      |                6 | membership_date  | date              | NO
+(20 rows)
+
+SELECT c.conrelid::regclass AS table_name, c.conname AS constraint_name,
+       pg_get_constraintdef(c.oid) AS definition
+FROM pg_constraint c
+JOIN pg_namespace n ON n.oid = c.connamespace
+WHERE n.nspname = 'lab09' AND c.contype IN ('p', 'f', 'u', 'c')
+ORDER BY table_name, constraint_name;
+       table_name       |        constraint_name         |                                                  definition                                                  
+------------------------+--------------------------------+--------------------------------------------------------------------------------------------------------------
+ lab09.authors          | authors_pkey                   | PRIMARY KEY (author_id)
+ lab09.books            | books_available_copies_check   | CHECK ((available_copies >= 0))
+ lab09.books            | books_isbn_key                 | UNIQUE (isbn)
+ lab09.books            | books_pkey                     | PRIMARY KEY (book_id)
+ lab09.books            | books_publication_year_check   | CHECK (((publication_year >= 1450) AND (publication_year <= 2100)))
+ lab09.book_authors     | book_authors_author_id_fkey    | FOREIGN KEY (author_id) REFERENCES lab09.authors(author_id)
+ lab09.book_authors     | book_authors_book_id_fkey      | FOREIGN KEY (book_id) REFERENCES lab09.books(book_id)
+ lab09.book_authors     | book_authors_pkey              | PRIMARY KEY (book_id, author_id)
+ lab09.membership_tiers | membership_tiers_pkey          | PRIMARY KEY (tier_id)
+ lab09.membership_tiers | membership_tiers_tier_name_key | UNIQUE (tier_name)
+ lab09.members          | members_email_key              | UNIQUE (email)
+ lab09.members          | members_pkey                   | PRIMARY KEY (member_id)
+ lab09.members          | members_tier_id_fkey           | FOREIGN KEY (tier_id) REFERENCES lab09.membership_tiers(tier_id)
+ lab09.member_phones    | member_phones_member_id_fkey   | FOREIGN KEY (member_id) REFERENCES lab09.members(member_id) ON DELETE CASCADE
+ lab09.member_phones    | member_phones_phone_type_check | CHECK (((phone_type)::text = ANY ((ARRAY['mobile'::character varying, 'home'::character varying])::text[])))
+ lab09.member_phones    | member_phones_pkey             | PRIMARY KEY (member_id, phone_number)
+ lab09.loans            | loans_book_id_fkey             | FOREIGN KEY (book_id) REFERENCES lab09.books(book_id)
+ lab09.loans            | loans_late_fee_check           | CHECK ((late_fee >= (0)::numeric))
+ lab09.loans            | loans_member_id_fkey           | FOREIGN KEY (member_id) REFERENCES lab09.members(member_id)
+ lab09.loans            | loans_pkey                     | PRIMARY KEY (loan_id)
+ lab09.loans            | valid_loan_dates               | CHECK (((due_date >= loan_date) AND ((return_date IS NULL) OR (return_date >= loan_date))))
+(21 rows)
+

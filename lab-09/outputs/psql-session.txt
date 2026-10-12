@@ -1,0 +1,176 @@
+$ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-09/psql-demo.sql
+\set ON_ERROR_STOP on
+\pset pager off
+Pager usage is off.
+\ir lab09.sql
+-- Small library model. Rerunning resets only lab09.
+DROP SCHEMA IF EXISTS lab09 CASCADE;
+psql:lab-09/lab09.sql:2: NOTICE:  drop cascades to 7 other objects
+DETAIL:  drop cascades to table lab09.authors
+drop cascades to table lab09.books
+drop cascades to table lab09.book_authors
+drop cascades to table lab09.membership_tiers
+drop cascades to table lab09.members
+drop cascades to table lab09.member_phones
+drop cascades to table lab09.loans
+DROP SCHEMA
+CREATE SCHEMA lab09;
+CREATE SCHEMA
+CREATE TABLE lab09.authors (
+    author_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL
+);
+CREATE TABLE
+CREATE TABLE lab09.books (
+    book_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    isbn VARCHAR(13) NOT NULL UNIQUE,
+    publication_year INTEGER CHECK (publication_year BETWEEN 1450 AND 2100),
+    available_copies INTEGER NOT NULL DEFAULT 1 CHECK (available_copies >= 0)
+);
+CREATE TABLE
+CREATE TABLE lab09.book_authors (
+    book_id INTEGER NOT NULL REFERENCES lab09.books(book_id),
+    author_id INTEGER NOT NULL REFERENCES lab09.authors(author_id),
+    PRIMARY KEY (book_id, author_id)
+);
+CREATE TABLE
+CREATE TABLE lab09.membership_tiers (
+    tier_id INTEGER PRIMARY KEY,
+    tier_name VARCHAR(30) NOT NULL UNIQUE
+);
+CREATE TABLE
+CREATE TABLE lab09.members (
+    member_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    tier_id INTEGER NOT NULL REFERENCES lab09.membership_tiers(tier_id),
+    membership_date DATE NOT NULL DEFAULT CURRENT_DATE
+);
+CREATE TABLE
+-- Phone numbers get separate rows instead of a comma-separated list.
+CREATE TABLE lab09.member_phones (
+    member_id INTEGER NOT NULL REFERENCES lab09.members(member_id) ON DELETE CASCADE,
+    phone_number VARCHAR(20) NOT NULL,
+    phone_type VARCHAR(20) NOT NULL CHECK (phone_type IN ('mobile', 'home')),
+    PRIMARY KEY (member_id, phone_number)
+);
+CREATE TABLE
+CREATE TABLE lab09.loans (
+    loan_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    member_id INTEGER NOT NULL REFERENCES lab09.members(member_id),
+    book_id INTEGER NOT NULL REFERENCES lab09.books(book_id),
+    loan_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    return_date DATE,
+    late_fee NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (late_fee >= 0),
+    CONSTRAINT valid_loan_dates CHECK (due_date >= loan_date AND (return_date IS NULL OR return_date >= loan_date))
+);
+CREATE TABLE
+INSERT INTO lab09.authors (first_name, last_name) VALUES
+    ('George', 'Orwell'), ('Aldous', 'Huxley'),
+    ('Neil', 'Gaiman'), ('Terry', 'Pratchett');
+INSERT 0 4
+INSERT INTO lab09.books (title, isbn, publication_year, available_copies) VALUES
+    ('Nineteen Eighty-Four', '9780451524935', 1949, 3),
+    ('Brave New World', '9780060850524', 1932, 2),
+    ('Good Omens', '9780060853983', 1990, 1);
+INSERT 0 3
+INSERT INTO lab09.book_authors VALUES (1, 1), (2, 2), (3, 3), (3, 4);
+INSERT 0 4
+INSERT INTO lab09.membership_tiers VALUES (1, 'Standard'), (2, 'Student');
+INSERT 0 2
+INSERT INTO lab09.members (first_name, last_name, email, tier_id) VALUES
+    ('Nurai', 'Sadykova', 'nurai@example.edu', 2),
+    ('Alikhan', 'Omarov', 'alikhan@example.edu', 1);
+INSERT 0 2
+INSERT INTO lab09.member_phones VALUES
+    (1, '+996700111222', 'mobile'),
+    (1, '+996312555777', 'home');
+INSERT 0 2
+INSERT INTO lab09.loans (member_id, book_id, loan_date, due_date, return_date, late_fee) VALUES
+    (1, 1, DATE '2026-10-01', DATE '2026-10-15', NULL, 0),
+    (2, 2, DATE '2026-10-01', DATE '2026-10-04', DATE '2026-10-06', 10.00);
+INSERT 0 2
+SELECT b.title, a.first_name || ' ' || a.last_name AS author
+FROM lab09.books b
+JOIN lab09.book_authors ba USING (book_id)
+JOIN lab09.authors a USING (author_id)
+ORDER BY b.title;
+        title         |     author      
+----------------------+-----------------
+ Brave New World      | Aldous Huxley
+ Good Omens           | Neil Gaiman
+ Good Omens           | Terry Pratchett
+ Nineteen Eighty-Four | George Orwell
+(4 rows)
+
+SELECT m.first_name || ' ' || m.last_name AS member, t.tier_name, b.title,
+       l.loan_date, l.due_date, l.return_date, l.late_fee
+FROM lab09.loans l
+JOIN lab09.members m USING (member_id)
+JOIN lab09.membership_tiers t USING (tier_id)
+JOIN lab09.books b USING (book_id)
+ORDER BY l.loan_id;
+     member     | tier_name |        title         | loan_date  |  due_date  | return_date | late_fee 
+----------------+-----------+----------------------+------------+------------+-------------+----------
+ Nurai Sadykova | Student   | Nineteen Eighty-Four | 2026-10-01 | 2026-10-15 |             |     0.00
+ Alikhan Omarov | Standard  | Brave New World      | 2026-10-01 | 2026-10-04 | 2026-10-06  |    10.00
+(2 rows)
+
+SELECT m.email, p.phone_number, p.phone_type
+FROM lab09.members m JOIN lab09.member_phones p USING (member_id)
+ORDER BY p.phone_type;
+       email       | phone_number  | phone_type 
+-------------------+---------------+------------
+ nurai@example.edu | +996312555777 | home
+ nurai@example.edu | +996700111222 | mobile
+(2 rows)
+
+\dt lab09.*
+              List of tables
+ Schema |       Name       | Type  | Owner 
+--------+------------------+-------+-------
+ lab09  | authors          | table | aidin
+ lab09  | book_authors     | table | aidin
+ lab09  | books            | table | aidin
+ lab09  | loans            | table | aidin
+ lab09  | member_phones    | table | aidin
+ lab09  | members          | table | aidin
+ lab09  | membership_tiers | table | aidin
+(7 rows)
+
+\d lab09.loans
+                                Table "lab09.loans"
+   Column    |     Type      | Collation | Nullable |           Default            
+-------------+---------------+-----------+----------+------------------------------
+ loan_id     | integer       |           | not null | generated always as identity
+ member_id   | integer       |           | not null | 
+ book_id     | integer       |           | not null | 
+ loan_date   | date          |           | not null | 
+ due_date    | date          |           | not null | 
+ return_date | date          |           |          | 
+ late_fee    | numeric(10,2) |           | not null | 0
+Indexes:
+    "loans_pkey" PRIMARY KEY, btree (loan_id)
+Check constraints:
+    "loans_late_fee_check" CHECK (late_fee >= 0::numeric)
+    "valid_loan_dates" CHECK (due_date >= loan_date AND (return_date IS NULL OR return_date >= loan_date))
+Foreign-key constraints:
+    "loans_book_id_fkey" FOREIGN KEY (book_id) REFERENCES lab09.books(book_id)
+    "loans_member_id_fkey" FOREIGN KEY (member_id) REFERENCES lab09.members(member_id)
+
+\d lab09.book_authors
+              Table "lab09.book_authors"
+  Column   |  Type   | Collation | Nullable | Default 
+-----------+---------+-----------+----------+---------
+ book_id   | integer |           | not null | 
+ author_id | integer |           | not null | 
+Indexes:
+    "book_authors_pkey" PRIMARY KEY, btree (book_id, author_id)
+Foreign-key constraints:
+    "book_authors_author_id_fkey" FOREIGN KEY (author_id) REFERENCES lab09.authors(author_id)
+    "book_authors_book_id_fkey" FOREIGN KEY (book_id) REFERENCES lab09.books(book_id)
+

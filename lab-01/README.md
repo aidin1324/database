@@ -16,7 +16,7 @@ A database stores organized data. A DBMS, such as PostgreSQL, manages it. CRUD m
 | Index | A structure that can speed up searches, at the cost of storage and write work |
 | Normalization | Separating repeated facts into related tables to reduce duplication and update errors |
 
-One student can have one profile (one-to-one). One faculty can have many students (one-to-many). Students can take many courses, and each course can have many students (many-to-many). An `enrollments` table with student and course foreign keys represents that last relationship.
+Relationships: student/profile is one-to-one; faculty/students is one-to-many. Students/courses is many-to-many, linked through `enrollments` with two foreign keys.
 
 ## SQL and NoSQL
 
@@ -27,11 +27,11 @@ One student can have one profile (one-to-one). One faculty can have many student
 | Scaling | More server capacity; replication and distributed designs are also possible | Many systems distribute data across several servers |
 | Transactions and consistency | ACID transactions, subject to isolation and replication settings | Guarantees vary; some provide transactions and strong consistency, others favor eventual consistency |
 
-Document stores such as MongoDB hold nested records. Redis is a key-value store. Cassandra uses a wide-column model, which differs from an analytical columnar database. Neo4j stores nodes and edges for graph queries.
+Examples: MongoDB stores documents, Redis stores key-value pairs, Cassandra uses wide-column records, and Neo4j stores graphs. Wide-column and analytical columnar databases are different models.
 
-BASE means Basically Available, Soft state and Eventual consistency. In such a design, replicas may temporarily disagree and converge later. ACID and BASE describe different guarantees; the label "NoSQL" alone does not determine them.
+BASE means Basically Available, Soft state and Eventual consistency: replicas may disagree temporarily and converge later. A NoSQL system's guarantees depend on the product and configuration.
 
-I would choose SQL for course enrollments or payments because relationships and transaction rules matter. A document store can fit changing record structures. Distributed NoSQL systems can fit large datasets or geographically spread workloads, depending on the required consistency and query patterns.
+SQL fits enrollments and payments with transaction rules. Document stores fit changing record structures. Distributed NoSQL systems can fit large or geographically spread workloads, depending on consistency and query requirements.
 
 ## ACID
 
@@ -48,7 +48,7 @@ A money transfer is a useful example: subtracting from one account and adding to
 
 POSTGRES began at Berkeley in 1986. SQL support was added in 1994; the PostgreSQL name followed in 1996. See the [project history](https://www.postgresql.org/docs/18/history.html).
 
-PostgreSQL is open source and supports transactions, constraints, JSON/JSONB, XML, custom types, indexes and extensions. Functions and procedures can use PL/pgSQL; other procedural languages need their respective extensions. Replication supports standby servers, while distributed sharding requires additional design or tools. The project has a community that maintains releases and documentation.
+PostgreSQL is open source, with transactions, constraints, JSON/JSONB, XML, custom types, indexes and extensions. PL/pgSQL supports functions and procedures; other languages need extensions. Replication supports standby servers; sharding needs additional design or tools. The community maintains releases and documentation.
 
 | DBMS | Typical fit and tradeoff |
 | --- | --- |
@@ -56,7 +56,5 @@ PostgreSQL is open source and supports transactions, constraints, JSON/JSONB, XM
 | MySQL | A server commonly used by web applications; supported SQL features differ from PostgreSQL |
 | SQLite | An embedded database in a file; convenient for local apps, with different concurrency limits from a database server |
 | Oracle Database | A server used for enterprise transactions and analytics; commercial editions involve licensing costs |
-
-For these labs, PostgreSQL lets me practice SQL, table relationships and constraints on my own computer.
 
 [Course document](https://drive.google.com/file/d/1cBOWJijltzRnv3gMqgB5YpzooXFgAG_y/view)

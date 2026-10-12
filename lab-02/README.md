@@ -18,6 +18,8 @@ psql -U aidin -d postgres
 
 I set the role password with `ALTER USER aidin WITH PASSWORD '<local password>';`. The password is not stored here. The checks confirm `password_set = t`, a running service and a successful connection.
 
+The image below shows a saved command log.
+
 ![Versions, service and connection checks](screenshots/01-versions-and-service.png)
 
 In pgAdmin, I registered `Local PostgreSQL 18` with the settings above. PostgreSQL runs the database; pgAdmin provides the graphical client.

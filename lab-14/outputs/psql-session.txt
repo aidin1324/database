@@ -1,0 +1,197 @@
+$ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-14/psql-demo.sql
+\set ON_ERROR_STOP on
+\pset pager off
+Pager usage is off.
+\ir lab14.sql
+DROP SCHEMA IF EXISTS lab14 CASCADE;
+psql:lab-14/lab14.sql:1: NOTICE:  schema "lab14" does not exist, skipping
+DROP SCHEMA
+CREATE SCHEMA lab14;
+CREATE SCHEMA
+SET search_path=lab14,pg_catalog;
+SET
+CREATE TABLE customers(customer_id INTEGER PRIMARY KEY,name TEXT,email TEXT);
+CREATE TABLE
+CREATE TABLE orders(order_id INTEGER PRIMARY KEY,customer_id INTEGER REFERENCES customers,order_date DATE,total_amount NUMERIC(10,2));
+CREATE TABLE
+INSERT INTO customers VALUES (1,'Nurai','nurai@example.edu'),(2,'Alikhan','alikhan@example.edu'),(3,'Aelita','aelita@example.edu');
+INSERT 0 3
+INSERT INTO orders VALUES (1,1,'2026-10-01',150),(2,1,'2026-10-02',50),(3,2,'2026-10-03',200),(4,NULL,'2026-10-04',25);
+INSERT 0 4
+-- A nullable FK permits the guest order while still rejecting invalid non-null IDs.
+SELECT c.name,o.order_id,o.total_amount FROM customers c INNER JOIN orders o USING(customer_id) ORDER BY o.order_id;
+  name   | order_id | total_amount 
+---------+----------+--------------
+ Nurai   |        1 |       150.00
+ Nurai   |        2 |        50.00
+ Alikhan |        3 |       200.00
+(3 rows)
+
+SELECT c.name,o.order_id FROM customers c LEFT JOIN orders o USING(customer_id) ORDER BY c.customer_id,o.order_id;
+  name   | order_id 
+---------+----------
+ Nurai   |        1
+ Nurai   |        2
+ Alikhan |        3
+ Aelita  |         
+(4 rows)
+
+SELECT c.name,o.order_id FROM customers c RIGHT JOIN orders o USING(customer_id) ORDER BY o.order_id;
+  name   | order_id 
+---------+----------
+ Nurai   |        1
+ Nurai   |        2
+ Alikhan |        3
+         |        4
+(4 rows)
+
+SELECT c.name,o.order_id FROM customers c FULL OUTER JOIN orders o USING(customer_id) ORDER BY c.customer_id,o.order_id;
+  name   | order_id 
+---------+----------
+ Nurai   |        1
+ Nurai   |        2
+ Alikhan |        3
+ Aelita  |         
+         |        4
+(5 rows)
+
+CREATE TABLE products(product_id INTEGER PRIMARY KEY,product_name TEXT,price NUMERIC(10,2));
+CREATE TABLE
+INSERT INTO products VALUES (1,'Book',50),(2,'Pen',25);
+INSERT 0 2
+SELECT c.name,p.product_name FROM customers c CROSS JOIN products p ORDER BY c.customer_id,p.product_id;
+  name   | product_name 
+---------+--------------
+ Nurai   | Book
+ Nurai   | Pen
+ Alikhan | Book
+ Alikhan | Pen
+ Aelita  | Book
+ Aelita  | Pen
+(6 rows)
+
+CREATE TABLE order_items(order_id INTEGER REFERENCES orders,product_id INTEGER REFERENCES products,quantity INTEGER CHECK(quantity>0),PRIMARY KEY(order_id,product_id));
+CREATE TABLE
+INSERT INTO order_items VALUES (1,1,2),(1,2,2),(2,1,1),(3,1,4),(4,2,1);
+INSERT 0 5
+SELECT c.name,o.order_id,oi.quantity,p.product_name,p.price FROM customers c
+JOIN orders o USING(customer_id) JOIN order_items oi USING(order_id) JOIN products p USING(product_id)
+ORDER BY o.order_id,p.product_id;
+  name   | order_id | quantity | product_name | price 
+---------+----------+----------+--------------+-------
+ Nurai   |        1 |        2 | Book         | 50.00
+ Nurai   |        1 |        2 | Pen          | 25.00
+ Nurai   |        2 |        1 | Book         | 50.00
+ Alikhan |        3 |        4 | Book         | 50.00
+(4 rows)
+
+CREATE TABLE employees(employee_id INTEGER PRIMARY KEY,name TEXT,manager_id INTEGER REFERENCES employees);
+CREATE TABLE
+INSERT INTO employees VALUES (1,'Director',NULL),(2,'Manager',1),(3,'Assistant',2);
+INSERT 0 3
+SELECT e.name AS employee,m.name AS manager FROM employees e LEFT JOIN employees m ON e.manager_id=m.employee_id ORDER BY e.employee_id;
+ employee  | manager  
+-----------+----------
+ Director  | 
+ Manager   | Director
+ Assistant | Manager
+(3 rows)
+
+SELECT c.name,o.order_date,o.total_amount FROM customers c JOIN orders o USING(customer_id)
+WHERE o.order_date>=DATE '2024-01-01' AND o.total_amount>100 ORDER BY o.order_id;
+  name   | order_date | total_amount 
+---------+------------+--------------
+ Nurai   | 2026-10-01 |       150.00
+ Alikhan | 2026-10-03 |       200.00
+(2 rows)
+
+CREATE TABLE user_profiles(customer_id INTEGER PRIMARY KEY REFERENCES customers,phone TEXT);
+CREATE TABLE
+INSERT INTO user_profiles VALUES (1,'sample-phone');
+INSERT 0 1
+SELECT c.name,p.phone FROM customers c LEFT JOIN user_profiles p USING(customer_id) ORDER BY c.customer_id;
+  name   |    phone     
+---------+--------------
+ Nurai   | sample-phone
+ Alikhan | 
+ Aelita  | 
+(3 rows)
+
+CREATE TABLE authors(author_id INTEGER PRIMARY KEY,author_name TEXT);
+CREATE TABLE
+CREATE TABLE books(book_id INTEGER PRIMARY KEY,title TEXT,publication_year INTEGER,author_id INTEGER REFERENCES authors);
+CREATE TABLE
+INSERT INTO authors VALUES (1,'George Orwell');
+INSERT 0 1
+INSERT INTO books VALUES (1,'Animal Farm',1945,1),(2,'Nineteen Eighty-Four',1949,1);
+INSERT 0 2
+SELECT a.author_name,b.title,b.publication_year FROM authors a JOIN books b USING(author_id) ORDER BY a.author_name,b.publication_year;
+  author_name  |        title         | publication_year 
+---------------+----------------------+------------------
+ George Orwell | Animal Farm          |             1945
+ George Orwell | Nineteen Eighty-Four |             1949
+(2 rows)
+
+CREATE TABLE students(student_id INTEGER PRIMARY KEY,student_name TEXT);
+CREATE TABLE
+CREATE TABLE courses(course_id INTEGER PRIMARY KEY,course_name TEXT);
+CREATE TABLE
+CREATE TABLE enrollments(student_id INTEGER REFERENCES students,course_id INTEGER REFERENCES courses,enrollment_date DATE,grade TEXT,PRIMARY KEY(student_id,course_id));
+CREATE TABLE
+INSERT INTO students VALUES (1,'Nurai'),(2,'Alikhan');
+INSERT 0 2
+INSERT INTO courses VALUES (1,'Database'),(2,'Programming');
+INSERT 0 2
+INSERT INTO enrollments VALUES (1,1,'2026-10-01','A'),(1,2,'2026-10-01',NULL),(2,1,'2026-10-01','B');
+INSERT 0 3
+SELECT s.student_name,c.course_name,e.grade FROM students s JOIN enrollments e USING(student_id)
+JOIN courses c USING(course_id) WHERE e.grade IS NOT NULL ORDER BY s.student_name,c.course_name;
+ student_name | course_name | grade 
+--------------+-------------+-------
+ Alikhan      | Database    | B
+ Nurai        | Database    | A
+(2 rows)
+
+CREATE INDEX idx_orders_customer_id ON orders(customer_id);
+CREATE INDEX
+CREATE INDEX idx_order_items_product_id ON order_items(product_id);
+CREATE INDEX
+-- The composite PK already indexes order_items(order_id,product_id).
+SELECT c.name FROM customers c LEFT JOIN orders o USING(customer_id) WHERE o.order_id IS NULL;
+  name  
+--------
+ Aelita
+(1 row)
+
+SELECT o.order_id FROM customers c RIGHT JOIN orders o USING(customer_id) WHERE c.customer_id IS NULL;
+ order_id 
+----------
+        4
+(1 row)
+
+SELECT c.name,o.order_id FROM customers c FULL JOIN orders o USING(customer_id) WHERE c.customer_id IS NULL OR o.order_id IS NULL;
+  name  | order_id 
+--------+----------
+ Aelita |         
+        |        4
+(2 rows)
+
+EXPLAIN (ANALYZE,BUFFERS) SELECT c.name,o.order_id FROM customers c JOIN orders o USING(customer_id);
+                                                    QUERY PLAN                                                    
+------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=1.09..22.82 rows=4 width=36) (actual time=0.004..0.005 rows=3.00 loops=1)
+   Hash Cond: (c.customer_id = o.customer_id)
+   Buffers: shared hit=2
+   ->  Seq Scan on customers c  (cost=0.00..18.50 rows=850 width=36) (actual time=0.001..0.001 rows=3.00 loops=1)
+         Buffers: shared hit=1
+   ->  Hash  (cost=1.04..1.04 rows=4 width=8) (actual time=0.002..0.002 rows=3.00 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         Buffers: shared hit=1
+         ->  Seq Scan on orders o  (cost=0.00..1.04 rows=4 width=8) (actual time=0.001..0.001 rows=4.00 loops=1)
+               Buffers: shared hit=1
+ Planning Time: 0.018 ms
+ Execution Time: 0.009 ms
+(12 rows)
+
+RESET search_path;
+RESET

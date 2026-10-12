@@ -1,0 +1,235 @@
+$ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-15/psql-demo.sql
+\set ON_ERROR_STOP on
+\pset pager off
+Pager usage is off.
+\ir lab15.sql
+DROP SCHEMA IF EXISTS lab15 CASCADE;
+psql:lab-15/lab15.sql:1: NOTICE:  schema "lab15" does not exist, skipping
+DROP SCHEMA
+CREATE SCHEMA lab15;
+CREATE SCHEMA
+SET search_path=lab15,pg_catalog;
+SET
+CREATE TABLE employees (
+ employee_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT NOT NULL,
+ department TEXT, department_id INTEGER, salary NUMERIC(10,2), email TEXT,
+ age INTEGER, hire_date DATE, experience_years INTEGER, bonus NUMERIC(10,2), manager_id INTEGER
+);
+CREATE TABLE
+INSERT INTO employees VALUES
+ (1,'Alice','Adams','Engineering',3,120000,'alice@example.edu',45,'2020-01-10',15,5000,NULL),
+ (2,'Bob','Brown','Engineering',3,90000,'bob@example.edu',32,'2022-05-01',8,NULL,1),
+ (3,'Cara','Cole','Sales',5,70000,NULL,29,'2024-02-01',5,1000,1),
+ (4,'Dan','Davis','Sales',5,50000,'dan@example.edu',24,'2024-06-01',2,0,3),
+ (5,'Eve','Evans','Support',7,40000,'eve@example.edu',52,'2023-05-01',20,NULL,1),
+ (6,'Ben','Baker','Sales',5,70000,'ben@example.edu',31,'2021-03-01',7,1500,3),
+ (7,'Ana','Ali','Sales',5,60000,'ana@example.edu',27,'2024-03-01',4,NULL,3),
+ (8,'Max','Mills','Sales',5,55000,'max@example.edu',35,'2022-04-01',10,500,3),
+ (9,'Zoe','Zane','Sales',5,65000,'zoe@example.edu',41,'2020-09-01',12,NULL,3);
+INSERT 0 9
+CREATE TABLE products (product_id INTEGER PRIMARY KEY, product_name TEXT, category TEXT, price NUMERIC(10,2));
+CREATE TABLE
+INSERT INTO products VALUES (1,'Strawberry','Fruit',20),(2,'Blueberry','Fruit',50),(3,'Notebook','Stationery',10),(4,'Pen','Stationery',2);
+INSERT 0 4
+CREATE TABLE sales (sale_id INTEGER PRIMARY KEY, employee_id INTEGER REFERENCES employees, amount NUMERIC(10,2), sale_date DATE);
+CREATE TABLE
+INSERT INTO sales VALUES (1,3,1200,'2025-01-10'),(2,3,800,'2025-03-20'),(3,4,500,'2025-04-01'),(4,6,1500,'2026-01-20');
+INSERT 0 4
+-- Scalar, row and table subqueries.
+SELECT first_name,salary FROM employees WHERE salary>(SELECT AVG(salary) FROM employees) ORDER BY employee_id;
+ first_name |  salary   
+------------+-----------
+ Alice      | 120000.00
+ Bob        |  90000.00
+ Cara       |  70000.00
+ Ben        |  70000.00
+(4 rows)
+
+SELECT first_name FROM employees WHERE (department,salary)=(SELECT department,salary FROM employees WHERE employee_id=3) ORDER BY employee_id;
+ first_name 
+------------
+ Cara
+ Ben
+(2 rows)
+
+SELECT department,avg_salary FROM (SELECT department,AVG(salary) AS avg_salary FROM employees GROUP BY department) d WHERE avg_salary>60000 ORDER BY department;
+ department  |     avg_salary      
+-------------+---------------------
+ Engineering | 105000.000000000000
+ Sales       |  61666.666666666667
+(2 rows)
+
+WITH regional_sales AS (SELECT e.department_id,SUM(s.amount) AS total FROM sales s JOIN employees e USING(employee_id) GROUP BY e.department_id)
+SELECT * FROM regional_sales WHERE total>1000 ORDER BY department_id;
+ department_id |  total  
+---------------+---------
+             5 | 4000.00
+(1 row)
+
+WITH RECURSIVE org_chart AS (
+ SELECT employee_id,first_name,manager_id,0 AS depth,ARRAY[employee_id] AS path FROM employees WHERE manager_id IS NULL
+ UNION ALL
+ SELECT e.employee_id,e.first_name,e.manager_id,o.depth+1,o.path||e.employee_id
+ FROM employees e JOIN org_chart o ON e.manager_id=o.employee_id WHERE NOT e.employee_id=ANY(o.path)
+) SELECT employee_id,first_name,manager_id,depth FROM org_chart ORDER BY path;
+ employee_id | first_name | manager_id | depth 
+-------------+------------+------------+-------
+           1 | Alice      |            |     0
+           2 | Bob        |          1 |     1
+           3 | Cara       |          1 |     1
+           4 | Dan        |          3 |     2
+           6 | Ben        |          3 |     2
+           7 | Ana        |          3 |     2
+           8 | Max        |          3 |     2
+           9 | Zoe        |          3 |     2
+           5 | Eve        |          1 |     1
+(9 rows)
+
+CREATE TABLE warehouse_1(product_id INTEGER,product_name TEXT,quantity INTEGER);
+CREATE TABLE
+CREATE TABLE warehouse_2(LIKE warehouse_1);
+CREATE TABLE
+INSERT INTO warehouse_1 VALUES (1,'Book',0),(2,'Pen',3);
+INSERT 0 2
+INSERT INTO warehouse_2 VALUES (1,'Book',0),(3,'Pencil',5);
+INSERT 0 2
+SELECT product_name FROM warehouse_1 UNION SELECT product_name FROM warehouse_2 ORDER BY 1;
+ product_name 
+--------------
+ Book
+ Pen
+ Pencil
+(3 rows)
+
+SELECT product_name FROM warehouse_1 UNION ALL SELECT product_name FROM warehouse_2 ORDER BY 1;
+ product_name 
+--------------
+ Book
+ Book
+ Pen
+ Pencil
+(4 rows)
+
+SELECT product_id FROM warehouse_1 WHERE quantity=0 INTERSECT SELECT product_id FROM warehouse_2 WHERE quantity=0;
+ product_id 
+------------
+          1
+(1 row)
+
+SELECT product_name FROM warehouse_1 EXCEPT SELECT product_name FROM warehouse_2;
+ product_name 
+--------------
+ Pen
+(1 row)
+
+SELECT first_name,department,salary,
+ ROW_NUMBER() OVER(PARTITION BY department ORDER BY salary DESC,employee_id) AS row_number,
+ RANK() OVER(PARTITION BY department ORDER BY salary DESC) AS rank,
+ DENSE_RANK() OVER(PARTITION BY department ORDER BY salary DESC) AS dense_rank
+FROM employees ORDER BY department,salary DESC,employee_id;
+ first_name | department  |  salary   | row_number | rank | dense_rank 
+------------+-------------+-----------+------------+------+------------
+ Alice      | Engineering | 120000.00 |          1 |    1 |          1
+ Bob        | Engineering |  90000.00 |          2 |    2 |          2
+ Cara       | Sales       |  70000.00 |          1 |    1 |          1
+ Ben        | Sales       |  70000.00 |          2 |    1 |          1
+ Zoe        | Sales       |  65000.00 |          3 |    3 |          2
+ Ana        | Sales       |  60000.00 |          4 |    4 |          3
+ Max        | Sales       |  55000.00 |          5 |    5 |          4
+ Dan        | Sales       |  50000.00 |          6 |    6 |          5
+ Eve        | Support     |  40000.00 |          1 |    1 |          1
+(9 rows)
+
+SELECT employee_id,first_name,
+ SUM(salary) OVER(PARTITION BY department) AS department_salary,
+ ROUND(AVG(salary) FILTER(WHERE experience_years>5) OVER(),2) AS experienced_average,
+ LAG(salary) OVER(ORDER BY employee_id) AS previous_salary,
+ LEAD(salary) OVER(ORDER BY employee_id) AS next_salary,
+ SUM(salary) OVER(ORDER BY employee_id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_salary
+FROM employees ORDER BY employee_id;
+ employee_id | first_name | department_salary | experienced_average | previous_salary | next_salary | running_salary 
+-------------+------------+-------------------+---------------------+-----------------+-------------+----------------
+           1 | Alice      |         210000.00 |            73333.33 |                 |    90000.00 |      120000.00
+           2 | Bob        |         210000.00 |            73333.33 |       120000.00 |    70000.00 |      210000.00
+           3 | Cara       |         370000.00 |            73333.33 |        90000.00 |    50000.00 |      280000.00
+           4 | Dan        |         370000.00 |            73333.33 |        70000.00 |    40000.00 |      330000.00
+           5 | Eve        |          40000.00 |            73333.33 |        50000.00 |    70000.00 |      370000.00
+           6 | Ben        |         370000.00 |            73333.33 |        40000.00 |    60000.00 |      440000.00
+           7 | Ana        |         370000.00 |            73333.33 |        70000.00 |    55000.00 |      500000.00
+           8 | Max        |         370000.00 |            73333.33 |        60000.00 |    65000.00 |      555000.00
+           9 | Zoe        |         370000.00 |            73333.33 |        55000.00 |             |      620000.00
+(9 rows)
+
+CREATE TABLE annual_sales(product_name TEXT,year INTEGER,sales_amount NUMERIC);
+CREATE TABLE
+INSERT INTO annual_sales VALUES ('Book',2022,100),('Book',2023,150),('Book',2024,200),('Pen',2022,20),('Pen',2023,30),('Pen',2024,40);
+INSERT 0 6
+CREATE VIEW pivoted_sales AS SELECT product_name,
+ SUM(CASE WHEN year=2022 THEN sales_amount ELSE 0 END) AS year_2022,
+ SUM(CASE WHEN year=2023 THEN sales_amount ELSE 0 END) AS year_2023,
+ SUM(CASE WHEN year=2024 THEN sales_amount ELSE 0 END) AS year_2024 FROM annual_sales GROUP BY product_name;
+CREATE VIEW
+SELECT * FROM pivoted_sales ORDER BY product_name;
+ product_name | year_2022 | year_2023 | year_2024 
+--------------+-----------+-----------+-----------
+ Book         |       100 |       150 |       200
+ Pen          |        20 |        30 |        40
+(2 rows)
+
+SELECT product_name,2022 AS year,year_2022 AS amount FROM pivoted_sales
+UNION ALL SELECT product_name,2023,year_2023 FROM pivoted_sales
+UNION ALL SELECT product_name,2024,year_2024 FROM pivoted_sales ORDER BY product_name,year;
+ product_name | year | amount 
+--------------+------+--------
+ Book         | 2022 |    100
+ Book         | 2023 |    150
+ Book         | 2024 |    200
+ Pen          | 2022 |     20
+ Pen          | 2023 |     30
+ Pen          | 2024 |     40
+(6 rows)
+
+CREATE TABLE priorities(product_name TEXT,status TEXT);
+CREATE TABLE
+INSERT INTO priorities VALUES ('Book','Low Priority'),('Pen','High Priority'),('Pencil','Medium Priority');
+INSERT 0 3
+SELECT * FROM priorities ORDER BY CASE status WHEN 'High Priority' THEN 1 WHEN 'Medium Priority' THEN 2 WHEN 'Low Priority' THEN 3 ELSE 4 END,product_name;
+ product_name |     status      
+--------------+-----------------
+ Pen          | High Priority
+ Pencil       | Medium Priority
+ Book         | Low Priority
+(3 rows)
+
+CREATE INDEX idx_employee_department_salary ON employees(department,salary);
+CREATE INDEX
+ANALYZE employees;
+ANALYZE
+EXPLAIN SELECT first_name,salary FROM employees WHERE department='Sales' AND salary>60000;
+                                QUERY PLAN                                
+--------------------------------------------------------------------------
+ Seq Scan on employees  (cost=0.00..1.14 rows=4 width=9)
+   Filter: ((salary > '60000'::numeric) AND (department = 'Sales'::text))
+(2 rows)
+
+EXPLAIN (ANALYZE,BUFFERS) SELECT first_name,salary FROM employees WHERE department='Sales' AND salary>60000 ORDER BY salary DESC,employee_id LIMIT 10;
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1.18..1.19 rows=4 width=13) (actual time=0.004..0.005 rows=3.00 loops=1)
+   Buffers: shared hit=1
+   ->  Sort  (cost=1.18..1.19 rows=4 width=13) (actual time=0.004..0.004 rows=3.00 loops=1)
+         Sort Key: salary DESC, employee_id
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=1
+         ->  Seq Scan on employees  (cost=0.00..1.14 rows=4 width=13) (actual time=0.002..0.003 rows=3.00 loops=1)
+               Filter: ((salary > '60000'::numeric) AND (department = 'Sales'::text))
+               Rows Removed by Filter: 6
+               Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=3
+ Planning Time: 0.021 ms
+ Execution Time: 0.008 ms
+(14 rows)
+
+RESET search_path;
+RESET

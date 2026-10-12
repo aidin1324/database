@@ -8,6 +8,8 @@ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-07/psql-demo.sql
 
 The composite key `(student_id, course_id, semester)` allows the same course in different semesters and rejects a duplicate enrollment. Primary keys reject `NULL` and duplicate values. `\d` and `pg_indexes` show their unique B-tree indexes.
 
+The images below show saved psql output.
+
 ![Primary key checks and composite key](screenshots/01-psql-results.png)
 
 `SERIAL`, `BIGSERIAL` and `IDENTITY` generate IDs from sequences. `ALWAYS` rejects an explicit ID unless `OVERRIDING SYSTEM VALUE` is used; `BY DEFAULT` accepts one. `IDENTITY` alone does not guarantee uniqueness, so these tables also use `PRIMARY KEY`.

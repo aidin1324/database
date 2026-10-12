@@ -12,6 +12,8 @@ The script also creates and drops its own `lab05_delete_demo_<PID>` database. It
 
 Names use lowercase and underscores, for example `student_records`, without spaces or reserved SQL words.
 
+The images below show saved psql output.
+
 ![Database command results](screenshots/01-database-commands.png)
 
 [SQL](lab05.sql) · [Full session](outputs/psql-session.txt) · [Course document](https://drive.google.com/file/d/1tACFw9v3Um6sak1ZjbQzxRur91qSvJKw/view)

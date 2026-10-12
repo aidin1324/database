@@ -15,6 +15,8 @@ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-06/psql-demo.sql
 
 `INTEGER` stores whole numbers; `BIGINT` has a larger range. Names use lowercase and underscores. Primary keys identify rows; [Lab 8](../lab-08/README.md) demonstrates foreign keys. The grade check allows `NULL` because grade is optional.
 
+The images below show saved psql output.
+
 ![Constraint checks and final rows](screenshots/01-constraints-and-table.png)
 
 ![Final structure and temporary table](screenshots/02-structure-and-temporary-table.png)

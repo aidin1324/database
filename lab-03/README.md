@@ -21,11 +21,11 @@ psql -X -a -v ON_ERROR_STOP=1 -h 127.0.0.1 -p 5432 -U aidin -d lab03 -f lab-03/p
 | `\?` | Show psql help |
 | `\q` | Exit |
 
+The images below show saved psql output.
+
 ![Table list and structure](screenshots/01-psql-structure.png)
 
 The table has an identity primary key, unique emails and checks for age and enrollment year. Inserts use `ON CONFLICT (email) DO UPDATE`, so reruns keep 12 sample rows.
-
-![Query results](screenshots/02-query-results.png)
 
 The disposable table contains Alice (21) and Bob (23). `DROP TABLE pg_temp.lab03_delete_demo` removes only that session's temporary table.
 

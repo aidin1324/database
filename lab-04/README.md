@@ -19,6 +19,8 @@ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d lab03 -f lab-04/lab04.sql
 
 Each result row is a record; each column is a selected field. The lesson's `ORDER BY;` needs a column, such as `ORDER BY full_name`. Sorting before `LIMIT` makes the chosen rows predictable when the sort keys distinguish them. The script includes `--` and `/* ... */` comments.
 
+The images below show saved psql output.
+
 ![SELECT results](screenshots/01-first-query.png)
 
 ![Filtering, sorting and limiting](screenshots/02-filter-sort-limit.png)

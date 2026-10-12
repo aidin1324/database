@@ -1,0 +1,93 @@
+$ psql -X -a -v ON_ERROR_STOP=1 -U aidin -d postgres -f lab-11/psql-demo.sql
+\set ON_ERROR_STOP on
+\pset pager off
+Pager usage is off.
+\ir lab11.sql
+-- Only the lab11 schema is reset.
+DROP SCHEMA IF EXISTS lab11 CASCADE;
+psql:lab-11/lab11.sql:2: NOTICE:  schema "lab11" does not exist, skipping
+DROP SCHEMA
+CREATE SCHEMA lab11;
+CREATE SCHEMA
+CREATE TABLE lab11.students (
+ student_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ first_name VARCHAR(50) NOT NULL, last_name VARCHAR(50) NOT NULL, birth_date DATE
+);
+CREATE TABLE
+INSERT INTO lab11.students (first_name,last_name,birth_date)
+VALUES ('Aibek','Sharshenov','2002-05-12') RETURNING *;
+ student_id | first_name | last_name  | birth_date 
+------------+------------+------------+------------
+          1 | Aibek      | Sharshenov | 2002-05-12
+(1 row)
+
+INSERT 0 1
+INSERT INTO lab11.students (first_name,last_name,birth_date) VALUES
+ ('Ainura','Toktomamatova','2001-09-23'),
+ ('Bakyt','Mamatov','2003-01-15'), ('Gulzat','Sultanova','2002-07-30') RETURNING *;
+ student_id | first_name |   last_name   | birth_date 
+------------+------------+---------------+------------
+          2 | Ainura     | Toktomamatova | 2001-09-23
+          3 | Bakyt      | Mamatov       | 2003-01-15
+          4 | Gulzat     | Sultanova     | 2002-07-30
+(3 rows)
+
+INSERT 0 3
+UPDATE lab11.students SET birth_date='2002-05-15'
+WHERE first_name='Aibek' AND last_name='Sharshenov' RETURNING *;
+ student_id | first_name | last_name  | birth_date 
+------------+------------+------------+------------
+          1 | Aibek      | Sharshenov | 2002-05-15
+(1 row)
+
+UPDATE 1
+DELETE FROM lab11.students WHERE first_name='Gulzat' AND last_name='Sultanova' RETURNING *;
+ student_id | first_name | last_name | birth_date 
+------------+------------+-----------+------------
+          4 | Gulzat     | Sultanova | 2002-07-30
+(1 row)
+
+DELETE 1
+DELETE FROM lab11.students WHERE birth_date < DATE '2002-01-01' RETURNING *;
+ student_id | first_name |   last_name   | birth_date 
+------------+------------+---------------+------------
+          2 | Ainura     | Toktomamatova | 2001-09-23
+(1 row)
+
+DELETE 1
+-- Client-side COPY reads the CSV from the repository, not the server filesystem.
+\copy lab11.students(first_name,last_name,birth_date) FROM 'lab-11/students.csv' WITH (FORMAT csv, HEADER true)
+COPY 3
+SELECT * FROM lab11.students ORDER BY student_id;
+ student_id | first_name | last_name  | birth_date 
+------------+------------+------------+------------
+          1 | Aibek      | Sharshenov | 2002-05-15
+          3 | Bakyt      | Mamatov    | 2003-01-15
+          5 | Nursultan  | Isakov     | 2002-04-10
+          6 | Meerim     | Bekova     | 2003-06-12
+          7 | Tilek      | Usubaliev  | 2001-11-05
+(5 rows)
+
+UPDATE lab11.students SET last_name='Bekov' WHERE last_name IN ('Uulu','Isakov') RETURNING *;
+ student_id | first_name | last_name | birth_date 
+------------+------------+-----------+------------
+          5 | Nursultan  | Bekov     | 2002-04-10
+(1 row)
+
+UPDATE 1
+DELETE FROM lab11.students WHERE student_id IN (2,3,5) RETURNING *;
+ student_id | first_name | last_name | birth_date 
+------------+------------+-----------+------------
+          3 | Bakyt      | Mamatov   | 2003-01-15
+          5 | Nursultan  | Bekov     | 2002-04-10
+(2 rows)
+
+DELETE 2
+SELECT * FROM lab11.students ORDER BY student_id;
+ student_id | first_name | last_name  | birth_date 
+------------+------------+------------+------------
+          1 | Aibek      | Sharshenov | 2002-05-15
+          6 | Meerim     | Bekova     | 2003-06-12
+          7 | Tilek      | Usubaliev  | 2001-11-05
+(3 rows)
+
